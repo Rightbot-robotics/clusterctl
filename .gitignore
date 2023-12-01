@@ -1,0 +1,9 @@
+build
+dist
+*.egg-info
+*.py[co]
+.project
+.pydevproject
+.settings
+.idea
+*.iml
