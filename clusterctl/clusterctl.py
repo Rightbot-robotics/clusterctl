@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import sys
 import getpass
-from ssh import Client
+from clusterctl.ssh import Client
 import json
 
 import logging as log
