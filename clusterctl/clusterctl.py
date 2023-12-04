@@ -1,6 +1,66 @@
 from argparse import ArgumentParser
-from subprocess import call
 import sys
+import getpass
+from ssh import Client
+import json
+
+import logging as log
+import paramiko
+# wrapper for paramiko ssh client
+
+
+def get_pas(): # for shading password
+    passwd = getpass(prompt="Enter sudo  password: ", stream=None)
+    return passwd
+
+class Client:     
+    def __init__(self, hostname, user, key_file):
+        self.sshclient = paramiko.SSHClient()
+        self.user = user
+        self.hostname = hostname
+        self.keyfile = key_file  # file path for known hosts eg: .ssh/known_hosts
+        self.allow_agent = False
+        self.sshclient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.sshclient.connect(hostname=self.hostname, username=self.user, key_filename=self.keyfile)       
+    
+        
+    def Execute(self, command, isSudo=False):
+        try:
+            stdin, stdout, stderr = self.sshclient.exec_command(command=command, timeout=2.5)
+            if isSudo:
+                #paswrd = str(input("please enter the sudo password :  "))
+                paswrd = get_pas()
+                stdin.write(paswrd+'\n')
+        except TimeoutError as e:
+            log.info("connection timed out")
+        
+        stdin.flush()
+        out_stdout = stdout.read().decode("utf-8")
+        out_stderr = stderr.read().decode("utf-8")
+        stdin.close()
+        #self.sshclient.close()
+        if len(out_stderr) != 0:
+            log.error(out_stderr)
+        else:
+            log.info(out_stdout)
+            return out_stdout
+
+
+class ConfigLoader:
+    #takes the json file and loads all the config data
+    def __init__(self, credential_file):
+        self.file = credential_file
+
+        with open(self.file) as file:
+            self.nuc_data = json.load(file)
+
+
+    def loadConfig(self, origin, key):
+        for i in self.nuc_data[origin]:
+            return i[key]
+        
+JsonConfig = ConfigLoader("/home/shiva/clusterctl/start_commands.json") # data object
+         
 
 class CLIError(Exception):
     """Generic exception to raise and log different fatal errors."""
@@ -12,6 +72,7 @@ class CLIError(Exception):
     def __unicode__(self):
         return self.msg
 
+
 def main(argv=None):
     """Command line options."""
    
@@ -19,14 +80,14 @@ def main(argv=None):
     program_descrption = 'to controll supervisor instruction and execute commands'
 
     try:
-        # Setup argument parser
+       # Setup argument parser
         parser = ArgumentParser(prog=program_name, description=program_descrption)
         parser.add_argument("-s", "--sudo", action="store_true", help="run supervisorctl actions with sudo (nopasswd))")
         parser.add_argument("-V", "--version", action="version", version=0.1)
-        parser.add_argument("host-pattern", help="A host-pattern usually refers to a group of hosts. For more details, see Ansible documentation about Patterns.")
+        parser.add_argument("origin", help="arm, base, vision.")
         #parser.add_argument("supervisorctl-action", help="A supervisorctl action (and optional argument). For more details, see Supervisor documentation about the available supervisorctl actions.")
         
-        subparsers = parser.add_subparsers(help="One of the available supervisorctl actions.", dest="supervisorctl-action")
+        subparsers = parser.add_subparsers(help="One of the available supervisorctl actions.\n ", dest="supervisorctl-action")
         subparsers.add_parser("status", help="Get status info of all processes.")
         subparsers.add_parser("reread", help="Reread the configuration files of supervisord")
         subparsers.add_parser("reload", help="Restart remote supervisord")
@@ -40,43 +101,110 @@ def main(argv=None):
         restart_subparser = subparsers.add_parser("exec", help="execute a shell command")
         restart_subparser.add_argument("process-name", help="Name of the process")
 
+        restart_subparser = subparsers.add_parser("           ", help="           ")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("origin", help="Process Name")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("           ", help="           ")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("arm", help="hardware_controller")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("arm", help="task_manager")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("arm", help="conveyor_bridge")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("arm", help="canbus")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("           ", help="           ")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("vision", help="left_camera")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("vision", help="right_camera")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("vision", help="left_camera_filter")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("vision", help="right_camera_filter")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("vision", help="left_camera_detection")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("vision", help="right_camera_detection")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("           ", help="           ")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+
+        restart_subparser = subparsers.add_parser("base", help="base_controller")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("base", help="formant_vel")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("base", help="base_tf")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        restart_subparser = subparsers.add_parser("base", help="canbus")
+        restart_subparser.add_argument("process-name", help="Name of the process")
+        
+
         # Process arguments
         args = parser.parse_args(argv)
         verbose = 0
-        host_pattern = getattr(args, "host-pattern")
+        origin = getattr(args, "origin")
+
         #host_pattern = ''
         supervisorctl_action = getattr(args, "supervisorctl-action")        
         
         sudo = args.sudo
-        ansible_executable = "ansible"
         supervisorctl_executable = "supervisorctl"
-        ansible_action_option = "-a"
         
-        if sudo:
-            supervisorctl_command = "sudo " + supervisorctl_executable + " " + supervisorctl_action
-        else:
-            supervisorctl_command = supervisorctl_executable + " " + supervisorctl_action
-          
+        command = " "
+        process = " "
+        
         if supervisorctl_action not in ['status', 'reread', 'update', 'reload']:
-            supervisorctl_argument = getattr(args, "process-name")
-            if supervisorctl_argument not in ['start', 'stop', 'restart']:
-                supervisorctl_command = supervisorctl_argument
+            if supervisorctl_action not in ['start', 'stop', 'restart']:
+                sys.exit(main(["-h"]))
             else:
-                supervisorctl_command = supervisorctl_command + ' ' + supervisorctl_argument
-            
-        if verbose > 0:
-            verbose_level = "-"+ "v"*verbose
-            print("Verbose mode on: " + verbose_level)
-            print ("Parsed arguments:")
-            print (args)   
-            retcode = call([ansible_executable, host_pattern, verbose_level, ansible_action_option, supervisorctl_command,])
+                process = getattr(args,"process-name")
+                command = supervisorctl_executable + " " + supervisorctl_action + " " + process
         else:
-            retcode = call([ansible_executable, host_pattern, ansible_action_option, supervisorctl_command])
+            command = supervisorctl_executable + " " + supervisorctl_action
+
         
-        return retcode
+        
+        if origin == "arm":
+            conn1 = Client(JsonConfig.loadConfig(origin, "ip"), JsonConfig.loadConfig(origin, "user"), JsonConfig.loadConfig(origin, "public_key"))
+            if process == "canbus":
+                status = conn1.Execute("sudo -S ~/./enable_pcan.sh", True)
+                print(status)
+                conn1.sshclient.close()
+            else:
+                status = conn1.Execute(command, isSudo=False)
+                print(status)
+                conn1.sshclient.close()
+        elif origin == "base":
+            conn2 = Client(JsonConfig.loadConfig(origin, "ip"), JsonConfig.loadConfig(origin, "user"), JsonConfig.loadConfig(origin, "public_key"))
+            if process == "canbus":
+                status = conn2.Execute("sudo -S ~/./enable_pcan.sh", True)
+                print(status)
+                conn2.sshclient.close()
+            else:
+                status = conn2.Execute(command=command, isSudo=False)
+                print(status)
+                print(supervisorctl_executable + " " +command)
+                conn2.sshclient.close()
+        elif origin == "vision":
+            conn3 = Client(JsonConfig.loadConfig(origin, "ip"), JsonConfig.loadConfig(origin, "user"), JsonConfig.loadConfig(origin, "public_key"))
+            status = conn3.Execute(command=command, isSudo=False)
+            print(status)
+            conn3.sshclient.close()
+        
+
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
         return 0
 
 if __name__ == "__main__":
-    sys.exit(main(["-h"]))
+   # sys.exit(main(["-h"]))
+   main()

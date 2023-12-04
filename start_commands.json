@@ -1,0 +1,47 @@
+{
+    "arm" : [
+    {
+        "ip"            : "192.168.51.177",
+        "user"           : "rightbot",
+        "hardware_controller"       : "hardware_controller",
+        "task_manager"      : "task_manager",
+        "arm_status"        : "status",
+        "canbus"               : "sudo -S ~/./enable_pcan.sh",
+        "conveyor_bridge"   : "conveyor_bridge",
+        "public_key"      :  "/home/shiva/.ssh/known_hosts"
+
+    }
+],
+"vision" : [
+    {
+        "ip" : "192.168.51.198",
+        "user" : "inderjeet",
+        "right_camera" : "right_camera",
+        "left_camera"    : "left_camera",
+        "right_camera_detection"      : "right_camera_detection",
+        "left_camera_detection"         : "left_camera_detection",
+        "status" : "status",
+        "public_key"      :  "/home/shiva/.ssh/known_hosts"
+    }
+],
+
+"base" :[
+    {
+        "ip" : "192.168.51.112",
+        "user" : "rightbot",
+        "base_controller" : "base_controller",
+        "formant_vel_filter" : "formant_vel_filter",
+        "tf2_base"          : "tf2_base",
+        "can"               :"sudo -S ~/./enable_pcan.sh",
+        "public_key"      :  "/home/shiva/.ssh/known_hosts"
+    }
+],
+"conveyor" : [
+    {
+        "ip" : "192.168.51.80",
+        "user" : "rightbot",
+        "canbus" :"sudo -S ~/./enable_pcan.sh",
+        "conveyor_controller" : "conveyor_controller"
+    }
+]
+}
